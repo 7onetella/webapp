@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -74,17 +75,30 @@ func NewRedisClient() {
 	}
 }
 
+// ErrRedisNil cache miss
+var ErrRedisNil = errors.New("redis: nil")
+
 // RedisGetHandler redis get calls
 func RedisGetHandler(w http.ResponseWriter, req *http.Request) {
 	params := mux.Vars(req)
 	key := params["key"]
-	fmt.Println("key=", key)
 
 	val, err := client.Get(key).Result()
-	if err != nil {
-		fmt.Println(err)
+
+	if err == ErrRedisNil || len(val) == 0 {
+		fmt.Println("cache miss", key)
+		err := client.Set(key, key, 0).Err()
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		val = key
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(val))
 		return
 	}
+
+	// fmt.Println("cache hit", key)
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(val))
 }
@@ -97,7 +111,7 @@ func RedisSetHandler(w http.ResponseWriter, req *http.Request) {
 
 	err := client.Set(key, value, 0).Err()
 	if err != nil {
-		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
