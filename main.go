@@ -62,7 +62,7 @@ func HelloHandler(w http.ResponseWriter, req *http.Request) {
 // NewRedisClient new redis client
 func NewRedisClient() {
 	inst := redis.NewClient(&redis.Options{
-		Addr:     "dell-vm7.7onetella.net:22221",
+		Addr:     "tmt-vm7.7onetella.net:22221",
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
